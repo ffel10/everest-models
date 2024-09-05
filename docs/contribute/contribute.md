@@ -10,7 +10,7 @@ Operation Remover has the following criteria:
 - remove well operations from wells.json where well names intersect.
 - If no operation present **do nothing**
 
-We will try as much as possible to adhere the existing [Project Structure](../explanation.md#project-structure)
+We will try as much as possible to adhere the existing [Project Structure](../explanations/project_structure.md)
 
 ```bash
 # From project root
@@ -118,9 +118,7 @@ required named arguments:
 
 ### User Documentation
 
-Everest-models user documentation is build by [Everest](https://github.com/equinor/everest), As such it should be created, and modified over on that end. Please look to [Everest Tutorial](https://github.com/equinor/everest/tree/main/docs/source/tutorial)
-directory to know more of where your forward model documentation should live.
-
+Everest-models user documentation is build by [Everest](https://github.com/equinor/everest), As such it should be created, and modified over on that end.
 ### Dev Documentation
 
 Developer documentation lives here, in the `everest-models` project, Make sure **exposed** core function(s) have **docstring(s)**.

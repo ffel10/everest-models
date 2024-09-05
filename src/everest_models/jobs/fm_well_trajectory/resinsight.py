@@ -1,7 +1,7 @@
 import datetime
 import logging
 from pathlib import Path
-from typing import Iterable, Optional, Tuple
+from typing import Any, Dict, Iterable, Optional, Tuple, Union
 
 import lasio
 import pandas
@@ -10,10 +10,10 @@ import rips
 from everest_models.jobs.shared.models.phase import PhaseEnum
 
 from .models.config import (
-    DomainProperty,
+    ConnectionConfig,
+    DynamicDomainProperty,
     PerforationConfig,
-    PlatformConfig,
-    ResInsightConnectionConfig,
+    StaticDomainProperty,
     WellConfig,
 )
 from .models.data_structs import Trajectory
@@ -25,113 +25,79 @@ def _create_perforation_view(
     perforations: Iterable[PerforationConfig],
     formations_file: Path,
     case: rips.Case,
-    wells: Iterable[str],
+    well_name: str,
 ) -> None:
-    for perforation in perforations:
-        if perforation.well in wells:
-            if perforation.formations:
-                case.import_formation_names([bytes(formations_file.resolve())])
-            case.create_view().set_time_step(-1)
+    perforation = next((item for item in perforations if item.well == well_name), None)
+    if perforation is not None and perforation.formations:
+        case.import_formation_names([bytes(formations_file.resolve())])
+    case.create_view().set_time_step(-1)
 
 
 def read_wells(
     project: rips.Project,
     well_path_folder: Path,
     well_names: Iterable[str],
-    connection: Optional[ResInsightConnectionConfig],
-) -> rips.Project:
+    connection: Optional[ConnectionConfig],
+) -> None:
     project.import_well_paths(
         well_path_files=[
             str(well_path_folder / f"{well_name}.dev") for well_name in well_names
         ],
         well_path_folder=str(well_path_folder),
     )
+
     if connection is not None:
-        _create_perforation_view(
-            connection.perforations,
-            connection.formations_file,
-            project.cases()[0],
-            well_names,
-        )
+        for well_name in well_names:
+            _create_perforation_view(
+                connection.perforations,
+                connection.formations_file,
+                project.cases()[0],
+                well_name,
+            )
 
     project.update()
 
-    return project
-
 
 def create_well(
-    connection: ResInsightConnectionConfig,
-    platforms: Iterable[PlatformConfig],
-    measured_depth_step: float,
-    well: WellConfig,
-    trajectory: Trajectory,
+    connection: ConnectionConfig,
+    well_config: WellConfig,
+    guide_points: Trajectory,
     project: rips.Project,
-    project_path: Path,
-) -> rips.Project:
-    # ResInsight starts in a different directory we cannot use a relative path:
-    project_file = project_path / "model.rsp"
-
-    targets = [
-        [str(x), str(y), str(z)]
-        for x, y, z in zip(trajectory.x, trajectory.y, trajectory.z)
-    ]
-
+) -> Any:
     _create_perforation_view(
         connection.perforations,
         connection.formations_file,
         project.cases()[0],
-        well.name,
+        well_config.name,
     )
 
-    # Add a new modeled well path
-    well_path_coll = project.descendants(rips.WellPathCollection)[0]
-    well_path = well_path_coll.add_new_object(rips.ModeledWellPath)
-    well_path.name = well.name
+    well_path_collection = project.descendants(rips.WellPathCollection)[0]
+    well_path = well_path_collection.add_new_object(rips.ModeledWellPath)
+    well_path.name = well_config.name
     well_path.update()
 
-    # Create well targets
-    intersection_points = []
     geometry = well_path.well_path_geometry()
-
-    # if the first point is already a platform:
-    if targets[0][2] == str(0.0):
-        # set first point as platform and remove from targets
-        reference = targets[0]
-        targets = targets[1:]
-    # otherwise, if platform and kickoff are inputs:
-    elif well.platform is not None:
-        platform = next(item for item in platforms if item.name == well.platform)
-        reference = [platform.x, platform.y, platform.z]
-        targets = [reference] + targets
-    # finally, when there is no platform info create platform directly above
-    # first guide point
-    else:
-        reference = [targets[0][0], targets[0][1], 0]
-
-    # Create reference point
     reference_point = geometry.reference_point
-    reference_point[0] = reference[0]
-    reference_point[1] = reference[1]
-    reference_point[2] = reference[2]
+    reference_point[0] = str(guide_points.x[0])
+    reference_point[1] = str(guide_points.y[0])
+    reference_point[2] = str(guide_points.z[0])
     geometry.update()
 
-    for target in targets:
-        coord = target
+    intersection_points = []
+    for point in zip(guide_points.x[1:], guide_points.y[1:], guide_points.z[1:]):
+        coord = [str(item) for item in point]
         target = geometry.append_well_target(coordinate=coord, absolute=True)
-        target.dogleg1 = well.dogleg
-        target.dogleg2 = well.dogleg
+        target.dogleg1 = well_config.dogleg
+        target.dogleg2 = well_config.dogleg
         target.update()
         intersection_points.append(coord)
     geometry.update()
 
-    #### currently only available in resinsightdev
-    intersection_coll = project.descendants(rips.IntersectionCollection)[0]
-    # Add a CurveIntersection and set coordinates for the polyline
-    intersection = intersection_coll.add_new_object(rips.CurveIntersection)
+    intersection_collection = project.descendants(rips.IntersectionCollection)[0]
+    intersection = intersection_collection.add_new_object(rips.CurveIntersection)
     intersection.points = intersection_points
     intersection.update()
 
-    # Read out estimated dogleg and azimuth/inclination for well targets
     for well in geometry.well_path_targets():
         logger.info(
             "\t".join(
@@ -144,19 +110,33 @@ def create_well(
             )
         )
 
-    # Save the project to file
-    logger.info(f"Saving project to: {project_file}")
-    project.save(str(project_file))
-    logger.info(
-        f"Calling 'export_well_paths' on the resinsight project" f"\ncwd = {Path.cwd()}"
-    )
-    # This log is deceving, it assumes that rips.Project().export_well_paths()
-    # exports the file to current workig dircetory (cwd) which is not true.
-    # pytest changes the working directory to '/tmp' but '.export_well_paths`
-    # keeps exporting the file to the project root directory
-    project.export_well_paths(well_paths=None, md_step_size=measured_depth_step)
+    return well_path
 
-    return project
+
+def create_branches(
+    well_config: WellConfig,
+    well_path: Any,
+    mlt_guide_points: Dict[str, Tuple[float, Trajectory]],
+    project: rips.Project,
+) -> Any:
+    for md, guide_points in mlt_guide_points.values():
+        lateral = well_path.append_lateral(md)
+        geometry = lateral.well_path_geometry()
+
+        intersection_points = []
+        for point in zip(guide_points.x[1:], guide_points.y[1:], guide_points.z[1:]):
+            coord = [str(item) for item in point]
+            target = geometry.append_well_target(coordinate=coord, absolute=True)
+            target.dogleg1 = well_config.dogleg
+            target.dogleg2 = well_config.dogleg
+            target.update()
+            intersection_points.append(coord)
+        geometry.update()
+
+        intersection_collection = project.descendants(rips.IntersectionCollection)[0]
+        intersection = intersection_collection.add_new_object(rips.CurveIntersection)
+        intersection.points = intersection_points
+        intersection.update()
 
 
 def _find_time_step(
@@ -193,8 +173,8 @@ def create_well_logs(
     project: rips.Project,
     eclipse_model: Path,
     project_path: Path,
-    date: Optional[datetime.date] = None,
-) -> rips.Project:
+    date: Optional[datetime.date],
+) -> None:
     case = project.cases()[0]
 
     well_log_plot_collection = project.descendants(rips.WellLogPlotCollection)[0]
@@ -204,7 +184,13 @@ def create_well_logs(
 
         well_log_plot = well_log_plot_collection.new_well_log_plot(case, well_path)
 
-        perforation = next(item for item in perforations if item.well == well_path.name)
+        # If we created multi-lateral wells, the well path names are stored in
+        # the form "name Y#", e.g., "INJ Y1", where the index Y# indicates the
+        # number of the branch, and Y1 is the main trajectory. We need to split
+        # and take the first part to get the original well name:
+        well_name_base = well_path.name.partition(" Y")[0].strip()
+
+        perforation = next(item for item in perforations if item.well == well_name_base)
 
         if perforation.dynamic:
             restart = eclipse_model.with_suffix(".UNRST")
@@ -246,13 +232,11 @@ def create_well_logs(
 
     project.update()
 
-    return project
-
 
 def _filter_properties(
     conditions: pandas.Series,
     df: pandas.DataFrame,
-    properties: Tuple[DomainProperty, ...],
+    properties: Tuple[Union[DynamicDomainProperty, StaticDomainProperty], ...],
 ) -> pandas.Series:
     for property in properties:
         if property.min is not None:
@@ -294,59 +278,6 @@ def _filter_perforation_properties(
     return df_selected["DEPTH"]
 
 
-def _make_perforations(
-    well: WellConfig,
-    case,
-    well_path,
-    perf_depths: pandas.Series,
-    well_depth: Optional[float],
-    project_path: Path,
-) -> None:
-    export_filename = (project_path / well.name.replace(" ", "_")).with_suffix(".SCH")
-
-    diameter = well.radius * 2
-    skin_factor = well.skin
-
-    if well_depth is not None:
-        total_perf_length = 0
-        if perf_depths.size > 0:
-            for start, end in zip(perf_depths.iloc[::2], perf_depths.iloc[1::2]):
-                well_path.append_perforation_interval(
-                    start_md=start,
-                    end_md=end,
-                    diameter=diameter,
-                    skin_factor=skin_factor,
-                )
-
-                total_perf_length = round(total_perf_length + end - start, 2)
-            logger.info(f"Total perforation length is {total_perf_length}")
-
-        else:  # create one dummy connection and shut it thereafter
-            well_path.append_perforation_interval(
-                start_md=well_depth - 1,
-                end_md=well_depth,
-                diameter=diameter,
-                skin_factor=skin_factor,
-            )
-
-        logger.info(
-            f"Exporting well completion data to: {export_filename}"
-            f"\ncwd = {Path.cwd()}"
-        )
-        case.export_well_path_completions(
-            time_step=0,
-            well_path_names=[well_path.name],
-            file_split="UNIFIED_FILE",
-            include_perforations=True,
-            export_comments=False,
-            custom_file_name=str(export_filename),
-        )
-
-    _generate_welspecs(
-        well.name, well.phase, well.group, export_filename, perf_depths, project_path
-    )
-
-
 def _read_las_file(las: Path) -> pandas.DataFrame:
     return lasio.read(las).df().reset_index()
 
@@ -358,19 +289,58 @@ def make_perforations(
     wells: Iterable[WellConfig],
     path: Path,
 ):
-    perforation_depth, well_depth = _select_perforations(
-        perforation=next(item for item in perforations if item.well == well_name),
+    # If we created multi-lateral wells, the well path names are stored in the
+    # form "name Y#", e.g., "INJ Y1", where the index Y# indicates the number of
+    # the branch, and Y1 is the main trajectory. We need to split and take the
+    # first part to get the original well name:
+    well_name_base = well_name.partition(" Y")[0].strip()
+
+    perf_depths, well_depth = _select_perforations(
+        perforation=next(item for item in perforations if item.well == well_name_base),
         df=_read_las_file(next(path.glob(f"{well_name.replace(' ', '_')}*.las"))),
     )
-    well = next(item for item in wells if item.name == well_name)
-    _make_perforations(
-        well=well,
-        case=project.cases()[0],
-        well_path=project.well_path_by_name(well.name),
-        perf_depths=perforation_depth,
-        well_depth=well_depth,
-        project_path=path,
+    well = next(item for item in wells if item.name == well_name_base)
+
+    export_filename = (path / well_name.replace(" ", "_")).with_suffix(".SCH")
+
+    if well_depth is not None:
+        well_path = project.well_path_by_name(well_name)
+        total_perf_length = 0
+        if perf_depths.size > 0:
+            for start, end in zip(perf_depths.iloc[::2], perf_depths.iloc[1::2]):
+                well_path.append_perforation_interval(
+                    start_md=start,
+                    end_md=end,
+                    diameter=2 * well.radius,
+                    skin_factor=well.skin,
+                )
+                total_perf_length = round(total_perf_length + end - start, 2)
+            logger.info(f"Total perforation length is {total_perf_length}")
+        else:  # create one dummy connection and shut it afterwards:
+            well_path.append_perforation_interval(
+                start_md=well_depth - 1,
+                end_md=well_depth,
+                diameter=2 * well.radius,
+                skin_factor=well.skin,
+            )
+
+        logger.info(
+            f"Exporting well completion data to: {export_filename}"
+            f"\ncwd = {Path.cwd()}"
+        )
+        project.cases()[0].export_well_path_completions(
+            time_step=0,
+            well_path_names=[well_path.name],
+            file_split="UNIFIED_FILE",
+            include_perforations=True,
+            export_comments=False,
+            custom_file_name=str(export_filename),
+        )
+
+    _generate_welspecs(
+        well.name, well.phase, well.group, export_filename, perf_depths, path
     )
+
     project.update()
     return None if well_depth is None else well
 
@@ -417,7 +387,7 @@ def _generate_welspecs(
                 file_obj.write(line)
     else:
         logger.info("Well outside of the grid. Creating dummy shut connection.")
-        # write dummy WELSPECS and COMPDAT
+        # write dummy WELSPECS and COMPDAT:
         dummy = [
             "-- WELL  GROUP           BHP    PHASE  DRAIN  INFLOW  OPEN  CROSS  PVT    HYDS  FIP \n",
             "-- NAME  NAME   I    J   DEPTH  FLUID  AREA   EQUANS  SHUT  FLOW   TABLE  DENS  REGN \n",
@@ -433,7 +403,7 @@ def _generate_welspecs(
         with open(export_filename, "w") as file_obj:
             file_obj.writelines(dummy)
 
-        # TODO: create dummy MSW file as well
+        # Write dummy WELSEGS and COMPSEGS:
         dummy = ["WELSEGS \n", "/ \n", "COMPSEGS \n", "/ \n"]
         export_filename = (project_path / (well + "_MSW")).with_suffix(".SCH")
         with open(export_filename, "w") as file_obj:

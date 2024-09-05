@@ -4,10 +4,11 @@ from textwrap import dedent
 from typing import Any, Dict, Tuple
 
 import pytest
-from everest_models.jobs.shared.models import ModelConfig, RootModelConfig
 from pydantic import Field, FilePath, ValidationError
 from ruamel.yaml import YAML
 from typing_extensions import Annotated
+
+from everest_models.jobs.shared.models import ModelConfig, RootModelConfig
 
 
 class Sex(Enum):
@@ -47,34 +48,39 @@ class Wrapper(ModelConfig):
             dedent(
                 """
                 # User description. A relatively simple data.
-                # Datatype: User map
+                # Required: True
                 user:
 
                   # The name of the test model
                   # Datatype: string
                   # Examples: a string value
+                  # Required: False
                   # Default: some_name
                   name: some_name
 
                   # Long live the test model
                   # Datatype: integer
                   # Examples: 5, 1.5e4
-                  age: '...'  # ← REPLACE
+                  # Required: True
+                  age: <REPLACE>
 
                   # Sex of the user
                   # Datatype: string
                   # Choices: male, female
+                  # Required: False
                   # Default: male
                   sex: male
 
                 # Datatype: integer
-                # Examples: 1, 1.34E5, 1.34e5
+                # Examples: 1, 1.34E5
+                # Required: False
                 # Default: 213
                 user_id: 213
 
                 # Datatype: Path
-                # Examples: /path/to/file.ext, /path/to/dirictory/
-                data: '...'  # ← REPLACE
+                # Examples: /path/to/file.ext, /path/to/directory/
+                # Required: True
+                data: <REPLACE>
                 """
             ),
             id="wrapper over user",
@@ -88,17 +94,20 @@ class Wrapper(ModelConfig):
                   # The name of the test model
                   # Datatype: string
                   # Examples: a string value
+                  # Required: False
                   # Default: some_name
                   name: some_name
 
                   # Long live the test model
                   # Datatype: integer
                   # Examples: 5, 1.5e4
-                  age: '...'  # ← REPLACE
+                  # Required: True
+                  age: <REPLACE>
 
                   # Sex of the user
                   # Datatype: string
                   # Choices: male, female
+                  # Required: False
                   # Default: male
                   sex: male
                 """
@@ -109,23 +118,26 @@ class Wrapper(ModelConfig):
             DeepNested,
             dedent(
                 """\
-                <string>:
-                  <integer>:
+                <STRING>:
+                  <INTEGER>:
 
                     # The name of the test model
                     # Datatype: string
                     # Examples: a string value
+                    # Required: False
                     # Default: some_name
                     name: some_name
 
                     # Long live the test model
                     # Datatype: integer
                     # Examples: 5, 1.5e4
-                    age: '...'  # ← REPLACE
+                    # Required: True
+                    age: <REPLACE>
 
                     # Sex of the user
                     # Datatype: string
                     # Choices: male, female
+                    # Required: False
                     # Default: male
                     sex: male
                 """
@@ -135,7 +147,7 @@ class Wrapper(ModelConfig):
     ),
 )
 def test_base_config_commented_map(model: ModelConfig, expected: str) -> None:
-    map = model.commented_map()
+    map = model.commented_map(minimal=False)
     collector = StringIO()
     YAML().dump(map, collector)
     assert collector.getvalue() == expected
@@ -145,7 +157,8 @@ def test_base_config_check_for_ellipses() -> None:
     with pytest.raises(ValidationError, match="Field required"):
         User.model_validate({})
     with pytest.raises(
-        ValidationError, match="Please replace `...`, this field is required"
+        ValidationError,
+        match="Please replace any and/or all `...`, these field are required",
     ):
         User.model_validate({"age": "..."})
 
@@ -177,5 +190,5 @@ def test_base_config_check_for_ellipses() -> None:
         ),
     ),
 )
-def test_base_config_model_config(model: ModelConfig, expected: Dict[str, Any]) -> None:
+def test_base_config_model(model: ModelConfig, expected: Dict[str, Any]) -> None:
     assert model.model_config == expected

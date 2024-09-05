@@ -1,11 +1,12 @@
+copy_test_files () {
+    cp -r ${CI_SOURCE_ROOT}/tests ${CI_TEST_ROOT}/tests
+    cp -r ${CI_SOURCE_ROOT}/docs ${CI_TEST_ROOT}/docs
+}
 
-install_package () {
+install_test_dependencies () {
     pip install .[test]
 }
 
 start_tests () {
-    # For unknown reasons the many_wells_one_ring hangs on Jenkins
-    python -m pytest \
-        -k "not test_many_wells_one_rig" \
-        --ignore="tests/unit/test_formatting.py"
+    python -m pytest --test-resinsight
 }

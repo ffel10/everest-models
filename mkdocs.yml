@@ -14,29 +14,33 @@ nav:
     - Well Order Optimization: https://fmu-docs.equinor.com/docs/everest/tutorial/well_order_optimisation.html#forward-models
     - Well Rate Optimization: https://fmu-docs.equinor.com/docs/everest/tutorial/well_rate_optimisation.html#forward-models
     - Well Selection Optimization: https://fmu-docs.equinor.com/docs/everest/tutorial/well_selection.html#forward-models
+    - Tokens: tokens/how_to_guide.md
   - Reference:
       - Jobs:
-        - Add Templates: reference/add_templates/reference.md
-        - Drill Date Planner: reference/drill_date_planner/reference.md
-        - Drill Planner: reference/drill_planner/reference.md
-        - Compute Economics: reference/compute_economics/reference.md
-        - Extract Summary Date: reference/extract_summary_data/reference.md
-        - Interpret Well Drill: reference/interpret_well_drill/reference.md
-        - Net Present Value: reference/npv/reference.md
-        - Recovery Factor: reference/rf/reference.md
-        - Schmerge: reference/schmerge/reference.md
-        - Select Wells: reference/select_wells/reference.md
-        - Stea: reference/stea/reference.md
-        - Strip Dates: reference/strip_dates/reference.md
-        - Well Constraints: reference/well_constraints/reference.md
-        - Well Filter: reference/well_filter/reference.md
-        - Well Trajectory: reference/well_trajectory/reference.md
+          - Add Templates: reference/add_templates/reference.md
+          - Drill Date Planner: reference/drill_date_planner/reference.md
+          - Drill Planner: reference/drill_planner/reference.md
+          - Compute Economics: reference/compute_economics/reference.md
+          - Extract Summary Date: reference/extract_summary_data/reference.md
+          - Interpret Well Drill: reference/interpret_well_drill/reference.md
+          - Net Present Value: reference/npv/reference.md
+          - Recovery Factor: reference/rf/reference.md
+          - Schmerge: reference/schmerge/reference.md
+          - Select Wells: reference/select_wells/reference.md
+          - Stea: reference/stea/reference.md
+          - Strip Dates: reference/strip_dates/reference.md
+          - Well Constraints: reference/well_constraints/reference.md
+          - Well Filter: reference/well_filter/reference.md
+          - Well Swapping: reference/well_swapping/reference.md
+          - Well Trajectory: reference/well_trajectory/reference.md
       - Shared Functions:
-        - Validators: reference/shared/validators.md
-        - Models: reference/shared/models.md
-        - Arguments: reference/shared/arguments.md
+          - Validators: reference/shared/validators.md
+          - Models: reference/shared/models.md
+          - Arguments: reference/shared/arguments.md
       - reference/hook.md
-  - explanation.md
+  - Explanation:
+      - Project Structure: explanations/project_structure.md
+      - Operations Rework: explanations/operations_rework.md
 
 plugins:
   - search
@@ -78,7 +82,6 @@ markdown_extensions:
   - mdx_include:
       base_path: docs
   - codehilite
-  - mdantic
   - admonition
 
 extra:
@@ -91,5 +94,4 @@ extra:
 
 extra_javascript:
   - javascripts/mathjax.js
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

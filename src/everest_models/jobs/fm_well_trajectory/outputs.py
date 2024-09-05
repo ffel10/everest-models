@@ -1,13 +1,10 @@
-import csv
 import math
 from pathlib import Path
 from typing import Dict, Iterable, Tuple
 
-import pandas
-
 from everest_models.jobs.shared import io_utils as io
 
-from .models.config import ConfigSchema, WellConfig
+from .models.config import WellConfig
 from .models.data_structs import CalculatedTrajectory, Trajectory
 
 
@@ -71,62 +68,41 @@ def write_path_files(results: Iterable[Tuple[Path, CalculatedTrajectory]]) -> No
             )
 
 
-def _csv_writer(path: Path, guide_points: Dict[str, Trajectory]):
-    with path.open("w", encoding="utf-8") as csv_file:
-        writer = csv.writer(csv_file, delimiter=";", lineterminator="\n")
-        writer.writerow(["well", "x", "y", "z"])
-        writer.writerows(
-            [well, x, y, z]
-            for well, data in guide_points.items()
-            for x, y, z in zip(data.x, data.y, data.z)
-        )
-
-
-def _json_writer(path: Path, guide_points: Dict[str, Trajectory]):
+def write_guide_points(guide_points: Dict[str, Trajectory], filename: Path) -> None:
     io.dump_json(
         {
             well: [data.x.tolist(), data.y.tolist(), data.z.tolist()]
             for well, data in guide_points.items()
         },
-        path,
+        filename,
     )
 
 
-def write_guide_points(guide_points: Dict[str, Trajectory], filename: Path) -> None:
-    if writer := {".csv": _csv_writer, ".json": _json_writer}.get(filename.suffix):
-        writer(filename, guide_points)
-    else:
-        raise RuntimeError("guide points file format not supported")
+def write_mlt_guide_points(guide_points: Dict[str, Trajectory], filename: Path) -> None:
+    io.dump_json(
+        {
+            well: {
+                branch: [
+                    branch_data[1].x.tolist(),
+                    branch_data[1].y.tolist(),
+                    branch_data[1].z.tolist(),
+                ]
+                for branch, branch_data in well_data.items()
+            }
+            for well, well_data in guide_points.items()
+        },
+        filename,
+    )
 
 
-def write_well_geometry(config: ConfigSchema) -> None:
-    with open("well_geometry.txt", "w") as fp_well_geometry:
-        for well in config.wells:
-            # Read .dev file
-            with open(f"wellpaths/{well.name}.dev", "r") as fp_dev:
-                path = pandas.read_csv(
-                    fp_dev,
-                    delim_whitespace=True,
-                    skiprows=2,
-                    skipfooter=2,
-                    names=["X", "Y", "TVDMSL", "MDMSL"],
-                    engine="python",
-                )
-                for idx, _ in enumerate(path.index[:-1]):
-                    line = (
-                        f"{well.name}\t"
-                        f"{path.iloc[idx]['X']}\t"
-                        f"{path.iloc[idx]['Y']}\t"
-                        f"{path.iloc[idx]['TVDMSL']}\t"
-                        f"{path.iloc[idx+1]['X']}\t"
-                        f"{path.iloc[idx+1]['Y']}\t"
-                        f"{path.iloc[idx+1]['TVDMSL']}\t"
-                        f"{path.iloc[idx]['MDMSL']}\t"
-                        f"{path.iloc[idx+1]['MDMSL']}\t"
-                        f"{well.radius}\t"
-                        f"{well.skin}\n"
-                    )
-                    fp_well_geometry.write(line)
+def write_mlt_guide_md(guide_points: Dict[str, Trajectory], filename: Path) -> None:
+    io.dump_json(
+        {
+            well: {branch: branch_data[0] for branch, branch_data in well_data.items()}
+            for well, well_data in guide_points.items()
+        },
+        filename,
+    )
 
 
 def write_well_costs(costs: Dict[str, float], npv_file: Path) -> None:

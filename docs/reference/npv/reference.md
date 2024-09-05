@@ -1,10 +1,5 @@
-```bash
-{!> reference/npv/help!}
-```
+# Net Price Value
+
 ```yaml
-{!> reference/npv/schema.yml!}
+{!> reference/npv/config.yml!}
 ```
-
-## Models
-
-$pydantic: everest_models.jobs.fm_npv.npv_config_model.NPVConfig

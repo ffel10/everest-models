@@ -1,24 +1,25 @@
 from enum import Enum
 from io import StringIO
 from textwrap import dedent
-from typing import Any, List, Sequence, Set, Tuple, Type
+from typing import Any, List, Optional, Sequence, Set, Tuple, Type, Union
 
 import pytest
-from everest_models.jobs.shared.models.base_config.introspective import (
-    CommentedObject,
-    build_yaml_structure,
-    builtin_datatypes,
-)
 from hypothesis import given
 from hypothesis.strategies import booleans, floats, integers, text
 from pydantic import BaseModel
 from ruamel.yaml import YAML
 
+from everest_models.jobs.shared.models.base_config.introspective import (
+    CommentedObject,
+    build_yaml_structure,
+    builtin_datatypes,
+)
+
 
 @pytest.fixture(scope="package")
 def yaml() -> YAML:
     _yaml = YAML()
-    _yaml.indent(mapping=2, sequence=2, offset=0)
+    _yaml.indent(mapping=2, sequence=4, offset=2)
     return _yaml
 
 
@@ -53,14 +54,17 @@ def yaml() -> YAML:
             id="nested mapping",
         ),
         pytest.param(
-            [
-                CommentedObject(1, inline_comment="First item"),
-                CommentedObject(2, "Second item"),
-            ],
+            {
+                "inline": [
+                    CommentedObject(1, inline_comment="First item"),
+                    CommentedObject(2, "Second item"),
+                ]
+            },
             dedent(
                 """\
-                - 1  # First item
-                - 2
+                inline:
+                  - 1  # First item
+                  - 2
                 """
             ),
             id="sequence",
@@ -71,7 +75,7 @@ def yaml() -> YAML:
                 """\
                 # List item comment
                 list:
-                - dict_in_list: true
+                  - dict_in_list: true
                 """
             ),
             id="mixed data",
@@ -96,12 +100,12 @@ def yaml() -> YAML:
                 """\
                 # List item comment
                 list:
-                - string_a:
-                  - true
-                  - false
+                  - string_a:
+                      - true
+                      - false
                     # string_b comment
-                  string_b:  # TODO: I will not do it
-                    string_x: 0.5
+                    string_b:  # TODO: I will not do it
+                      string_x: 0.5
                 """
             ),
             id="deeply nested",
@@ -138,7 +142,7 @@ def test_builtin_datatypes_with_base_model():
     class MyModel(BaseModel):
         pass
 
-    assert builtin_datatypes(MyModel) == "MyModel map"
+    assert builtin_datatypes(MyModel) == "__remove__"
 
 
 def test_builtin_datatypes_with_enum():
@@ -153,10 +157,12 @@ def test_builtin_datatypes_with_enum():
 @pytest.mark.parametrize(
     "typ, expected",
     (
-        pytest.param(Sequence[int], "a array of integer", id="sequence"),
-        pytest.param(Set[int], "a collection of integer", id="set"),
-        pytest.param(List[str], "a array of string", id="list"),
-        pytest.param(Tuple[int, int], "a array of (integer, integer)", id="tuple"),
+        pytest.param(Sequence[int], "[integer]", id="sequence"),
+        pytest.param(Union[int, float], "integer or number", id="union"),
+        pytest.param(Optional[int], "integer", id="optional"),
+        pytest.param(Set[int], "unique values [integer]", id="set"),
+        pytest.param(List[str], "[string]", id="list"),
+        pytest.param(Tuple[int, int], "[integer, integer]", id="tuple"),
     ),
 )
 def test_builtin_datatypes_with_sequence(typ: Type, expected: str):

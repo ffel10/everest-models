@@ -3,27 +3,22 @@
 
 ## What is everest-models
 
-This project is a plugin for [Everest](https://github.com/equinor/everest) and [ERT](https://github.com/equinor/ert), that holds an amalgamation of
+This project is a plugin for [Everest™](https://github.com/equinor/everest) and [ERT](https://github.com/equinor/ert), that holds an amalgamation of
 forward models and workflows maintained and used by Equinor and TNO.
 
 ## Installation
 
 ```bash
-pip install git+{GH_TOKEN}@https://github.com/equinor/everest-models.git
+pip install git+https://github.com/equinor/everest-models.git
 ```
 
 This can also be done by downloading the latest [release](https://github.com/equinor/everest-models/releases)
 
 ## Local Test
 
-Make sure you have access and permission to the Equinor github organization.
-clone the project to your local repository.
-
 ```bash
 git clone https://github.com/equinor/everest-models.git
 ```
-
-> It is a good idea to create an SSH key and authorize it as an Equinor Single sign-on (SSO) key
 
 Install test dependencies
 

@@ -1,13 +1,13 @@
 import argparse
 import functools
 from functools import partial
-from sys import stdout
-from typing import Callable, Dict, Optional, Tuple, Type, TypeVar, Union
+from typing import Callable, Optional, Tuple, Type, TypeVar, Union
 
 from pydantic import BaseModel
+from typing_extensions import TypeAlias
 
-from .io_utils import dump_yaml
 from .models import Wells
+from .parsers import SchemaAction
 from .validators import (
     is_writable_path,
     parse_file,
@@ -16,27 +16,7 @@ from .validators import (
 )
 
 T = TypeVar("T", bound=BaseModel)
-
-
-class SchemaAction(argparse.Action):
-    _models = {}
-
-    @classmethod
-    def register_models(cls, models: Dict[str, Type[T]]) -> None:
-        cls._models.update(models)
-
-    def __call__(self, parser, *_):
-        for argument, model in self._models.items():
-            print("\n\n")
-            if issubclass(model, Wells):
-                print(f"{argument} is Everest generated wells JSON file")
-                continue
-            data = model.commented_map()
-            data.yaml_set_start_comment(
-                f"{argument} specification:\n'...' are REQUIRED fields that needs replacing\n\n"
-            )
-            dump_yaml(data, stdout, explicit=True, default_flow_style=False)
-        parser.exit()
+Parser: TypeAlias = Union[argparse.ArgumentParser, argparse._ArgumentGroup]
 
 
 class ArgumentDefaultsHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
@@ -48,9 +28,7 @@ class ArgumentDefaultsHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
         )
 
 
-def add_input_argument(
-    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup], *args, **kwargs
-) -> None:
+def add_input_argument(parser: Parser, *args, **kwargs) -> None:
     """Add input argument to parser.
 
     - Set type to 'valid_input_file' function caller
@@ -69,9 +47,7 @@ def add_input_argument(
     )
 
 
-def add_lint_argument(
-    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
-) -> None:
+def add_lint_argument(parser: Parser) -> None:
     """Add optional lint argument to parser.
 
     - Set action to 'store_true'
@@ -86,9 +62,7 @@ def add_lint_argument(
     )
 
 
-def add_file_schemas(
-    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
-) -> None:
+def add_file_schemas(parser: Parser) -> None:
     """Add optional schema argument to parser
 
     - Set action to 'SchemaAction'
@@ -104,11 +78,7 @@ def add_file_schemas(
     )
 
 
-def add_summary_argument(
-    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
-    *,
-    func: Optional[Callable] = None,
-) -> None:
+def add_summary_argument(parser: Parser, *, func: Optional[Callable] = None) -> None:
     """Add summary argument to parser.
 
     - Set type to 'func' or 'valid_ecl_summary' function caller
@@ -128,10 +98,11 @@ def add_summary_argument(
 
 
 def add_wells_input_argument(
-    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
+    parser: Parser,
     *,
     required: bool = True,
     schema: Type[T] = Wells,
+    arg: Tuple[str, str] = ("-i", "--input"),
     **kwargs,
 ) -> None:
     """Add wells argument to parser
@@ -144,7 +115,6 @@ def add_wells_input_argument(
         schema (models.BaseConfig, optional):
             Parser and validation schema to use. Defaults to models.WellListModel.
     """
-    arg = ["-i", "--input"]
     parser.add_argument(
         *arg,
         type=partial(parse_file, schema=schema),
@@ -154,12 +124,7 @@ def add_wells_input_argument(
     SchemaAction.register_models({"/".join(arg): schema})
 
 
-def add_output_argument(
-    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
-    *,
-    required: bool = True,
-    **kwargs,
-) -> None:
+def add_output_argument(parser: Parser, *, required: bool = True, **kwargs) -> None:
     """Add output argument to parser
 
     - Set type to 'is_writable_path' function caller

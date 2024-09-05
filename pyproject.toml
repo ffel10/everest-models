@@ -5,8 +5,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "everest-models"
-description = "Module containing a collection of jobs for ERT"
+description = "Module containing a collection of forward models for everest"
 readme = "README.md"
+license = {text = "GPL-3.0"}
 requires-python = ">=3.8"
 authors = [
     {name="Equinor ASA"},
@@ -17,6 +18,7 @@ classifiers = [
     "Programming language :: Python :: 3.9",
     "Programming language :: Python :: 3.10",
     "Programming language :: Python :: 3.11",
+    "Programming language :: Python :: 3.12",
 ]
 dependencies = [
     "resdata",
@@ -43,15 +45,11 @@ test = [
     "decorator",
     "mock",
     "hypothesis",
-    "pytest-runner",
     "pytest-timeout",
-    "fmu-steaclient @ git+https://github.com/equinor/fmu-steaclient",
 ]
 
 style = [
   "pre-commit",
-  "pre-commit-hooks",
-  "ruff",
 ]
 
 docs = [
@@ -60,7 +58,6 @@ docs = [
     "mkdocstrings[python]",
     "mdx_include",
     "pygments",
-    "markdown-mdantic"
 ]
 
 [project.entry-points."everest"]
@@ -82,6 +79,7 @@ fm_strip_dates = "everest_models.jobs.fm_strip_dates.cli:main_entry_point"
 fm_well_constraints = "everest_models.jobs.fm_well_constraints.cli:main_entry_point"
 fm_well_filter = "everest_models.jobs.fm_well_filter.cli:main_entry_point"
 fm_well_trajectory = "everest_models.jobs.fm_well_trajectory.cli:main_entry_point"
+fm_well_swapping = "everest_models.jobs.fm_well_swapping.cli:main_entry_point"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -106,7 +104,7 @@ markers = [
 log_cli = 0
 log_cli_level = "INFO"
 
-[tool.ruff]
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -114,9 +112,28 @@ select = [
     "I",  # isort
     "C",  # flake8-comprehensions
     "B",  # flake8-bugbear
+    "SIM",  # flake-8-simplify
+    "PL",  # pylint
 ]
 ignore = [
     "E501",  # line too long, handled by black
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
+    "W191",  # not to be used in combination with a formatter
+    "PLW2901",  # redefined-loop-name
+    "PLR2004",  # magic-value-comparison
+    "PLR0915",  # too-many-statements
+    "PLR0912",  # too-many-branches
+    "PLR0911",  # too-many-return-statements
+    "PLC2701",  # import-private-name
+    "PLR6201",  # literal-membership
+    "PLR0914",  # too-many-locals
+    "PLR6301",  # no-self-use
+    "PLW1641",  # eq-without-hash
+    "PLR0904",  # too-many-public-methods
+    "PLR1702",  # too-many-nested-blocks
+    "PLW3201",  # bad-dunder-method-name
 ]
+
+[tool.ruff.lint.pylint]
+max-args = 10

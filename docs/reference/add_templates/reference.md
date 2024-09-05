@@ -1,13 +1,9 @@
-```bash
-{!> reference/add_templates/help!}
-```
+# Add Templates
+
 ```yaml
-{!> reference/add_templates/schema.yml!}
+{!> reference/add_templates/config.yml!}
 ```
+
 ## Tasks
 
 ::: everest_models.jobs.fm_add_templates.tasks
-
-## Models
-
-$pydantic: everest_models.jobs.fm_add_templates.template_model.TemplateConfig

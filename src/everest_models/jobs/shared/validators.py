@@ -1,11 +1,13 @@
 import argparse
 import datetime
 import pathlib
+from collections import Counter
+from collections.abc import Sized
 from json import JSONDecodeError
 from os import W_OK, access
-from typing import Any, Iterable, Type, TypeVar
+from typing import Any, Callable, Dict, Iterable, List, Type, TypeVar
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, ValidationInfo
 from resdata.summary import Summary
 from ruamel.yaml.error import YAMLError
 
@@ -39,6 +41,17 @@ def is_writable_path(value: str) -> pathlib.Path:
         raise argparse.ArgumentTypeError(f"Can not write to file: {path}")
 
     return path
+
+
+def min_length(min: int) -> Callable[[Any, ValidationInfo], Any]:
+    def validator(value: Any, info: ValidationInfo) -> Any:
+        if isinstance(value, Sized) and not isinstance(value, str) and len(value) < min:
+            raise ValueError(
+                f"{info.field_name} value, is below minimum length ({min})"
+            )
+        return value
+
+    return validator
 
 
 def valid_ecl_summary(file_path: str) -> Summary:
@@ -144,6 +157,18 @@ def valid_input_file(value: str) -> Any:
         ) from e
     except ValueError as ve:
         raise argparse.ArgumentTypeError(str(ve)) from ve
+
+
+def valid_optimizer(value: str) -> List[Dict[str, float]]:
+    data = valid_input_file(value)
+    index_counts = Counter(key for _value in data.values() for key in _value)
+    if not all(count == len(data) for count in index_counts.values()):
+        raise argparse.ArgumentTypeError(
+            "All entries must contain the same amount of elements/indexes"
+        )
+    return [
+        {well: data[well][index] for well in data} for index in sorted(index_counts)
+    ]
 
 
 def is_gt_zero(value: str, msg: str) -> int:

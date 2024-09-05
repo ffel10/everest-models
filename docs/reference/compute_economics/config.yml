@@ -1,0 +1,220 @@
+# -c/--config specification:
+# <REPLACE> is a REQUIRED field that needs replacing
+
+
+# Required: True
+prices:
+  <STRING>:
+    -
+
+      # Datatype: number
+      # Examples: .1, 1., 1, 1.0, 1.34E-5, 1.34e-5
+      # Required: True
+      value: <REPLACE>
+
+      # Datatype: string
+      # Examples: a string value
+      # Required: False
+      # Default: null
+      currency: null
+
+      # Datatype: date
+      # Examples: 2024-01-31, 2024-01-31T11:06
+      # Required: True
+      date: <REPLACE>
+
+# Datatype: integer
+# Examples: .1, 1., 1, 1.0, 1.34E-5, 1.34e-5
+# Required: False
+# Default: 1
+multiplier: 1
+
+# Datatype: integer
+# Examples: .1, 1., 1, 1.0, 1.34E-5, 1.34e-5
+# Required: False
+# Default: 1
+default_exchange_rate: 1
+
+# Datatype: number
+# Examples: .1, 1., 1, 1.0, 1.34E-5, 1.34e-5
+# Required: False
+# Default: 0.08
+default_discount_rate: 0.08
+
+# Required: False
+dates:
+
+  # Datatype: date
+  # Examples: 2024-01-31, 2024-01-31T11:06
+  # Required: False
+  # Default: null
+  start_date: null
+
+  # Datatype: date
+  # Examples: 2024-01-31, 2024-01-31T11:06
+  # Required: False
+  # Default: null
+  end_date: null
+
+  # Datatype: date
+  # Examples: 2024-01-31, 2024-01-31T11:06
+  # Required: False
+  # Default: null
+  ref_date: null
+
+# Required: False
+exchange_rates:
+  <STRING>:
+    -
+
+      # Datatype: number
+      # Examples: .1, 1., 1, 1.0, 1.34E-5, 1.34e-5
+      # Required: True
+      value: <REPLACE>
+
+      # Datatype: string
+      # Examples: a string value
+      # Required: False
+      # Default: null
+      currency: null
+
+      # Datatype: date
+      # Examples: 2024-01-31, 2024-01-31T11:06
+      # Required: True
+      date: <REPLACE>
+
+# Required: False
+discount_rates:
+  -
+
+    # Datatype: number
+    # Examples: .1, 1., 1, 1.0, 1.34E-5, 1.34e-5
+    # Required: True
+    value: <REPLACE>
+
+    # Datatype: string
+    # Examples: a string value
+    # Required: False
+    # Default: null
+    currency: null
+
+    # Datatype: date
+    # Examples: 2024-01-31, 2024-01-31T11:06
+    # Required: True
+    date: <REPLACE>
+
+# Required: False
+costs:
+  -
+
+    # Datatype: number
+    # Examples: .1, 1., 1, 1.0, 1.34E-5, 1.34e-5
+    # Required: True
+    value: <REPLACE>
+
+    # Datatype: string
+    # Examples: a string value
+    # Required: False
+    # Default: null
+    currency: null
+
+    # Datatype: date
+    # Examples: 2024-01-31, 2024-01-31T11:06
+    # Required: True
+    date: <REPLACE>
+
+# Required: False
+well_costs:
+  -
+
+    # Datatype: number
+    # Examples: .1, 1., 1, 1.0, 1.34E-5, 1.34e-5
+    # Required: True
+    value: <REPLACE>
+
+    # Datatype: string
+    # Examples: a string value
+    # Required: False
+    # Default: null
+    currency: null
+
+    # Datatype: string
+    # Examples: a string value
+    # Required: True
+    well: <REPLACE>
+
+# Required: True
+summary:
+
+  # Datatype: Path
+  # Examples: /path/to/file.ext, /path/to/directory/
+  # Required: True
+  main: <REPLACE>
+
+  # Datatype: Path
+  # Examples: /path/to/file.ext, /path/to/directory/
+  # Required: False
+  # Default: null
+  reference: null
+
+  # Datatype: [string]
+  # Required: False
+  keys:
+    - <REPLACE>
+
+# Datatype: Path
+# Examples: /path/to/file.ext, /path/to/directory/
+# Required: False
+# Default: null
+wells_input: null
+
+# Required: True
+output:
+
+  # Datatype: Path
+  # Examples: /path/to/file.ext, /path/to/directory/
+  # Required: True
+  file: <REPLACE>
+
+  # Datatype: string
+  # Examples: a string value
+  # Required: False
+  # Default: null
+  currency: null
+
+  # Required: False
+  # Default: null
+  currency_rate:
+    -
+
+      # Datatype: number
+      # Examples: .1, 1., 1, 1.0, 1.34E-5, 1.34e-5
+      # Required: True
+      value: <REPLACE>
+
+      # Datatype: string
+      # Examples: a string value
+      # Required: False
+      # Default: null
+      currency: null
+
+      # Datatype: date
+      # Examples: 2024-01-31, 2024-01-31T11:06
+      # Required: True
+      date: <REPLACE>
+
+# Required: False
+# Default: null
+oil_equivalent:
+
+  # Datatype: {string: number}
+  # Required: True
+  oil:
+    <STRING>: <REPLACE>
+
+  # Datatype: {string: {string: number}}
+  # Required: False
+  # Default: null
+  remap:
+    <STRING>:
+      <STRING>: <REPLACE>
