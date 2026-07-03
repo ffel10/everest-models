@@ -1,7 +1,10 @@
 import numpy as np
 import pytest
 
-from everest_models.jobs.fm_plume_dynamic.config import validate_config_schema
+from everest_models.jobs.fm_plume_dynamic.config import (
+    load_plume_config,
+    validate_config_schema,
+)
 from everest_models.jobs.fm_plume_dynamic.tasks import (
     _distance_to_line,
     _get_calc_output_columns,
@@ -26,8 +29,6 @@ def test_validate_config_schema_rejects_unknown_top_level_key():
 
 def test_load_config_rejects_non_mapping_top_level():
     with pytest.raises(ValueError, match="Top-level YAML must be a mapping"):
-        from everest_models.jobs.fm_plume_dynamic.config import load_plume_config
-
         load_plume_config(["not", "a", "mapping"])
 
 
@@ -80,7 +81,9 @@ def test_normalize_optimization_direction_accepts_aliases():
 def test_distance_to_line_uses_finite_segment():
     centers = np.asarray([[10.0, 0.0, 0.0], [3.0, 4.0, 0.0]])
 
-    distances = _distance_to_line(centers, angle_deg=90.0, x0=0.0, y0=0.0, line_length=5.0)
+    distances = _distance_to_line(
+        centers, angle_deg=90.0, x0=0.0, y0=0.0, line_length=5.0
+    )
 
     np.testing.assert_allclose(distances, np.asarray([5.0, 4.0]))
 
