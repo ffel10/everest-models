@@ -1,0 +1,39 @@
+property: SGAS
+threshold: 0.1
+output_date: 2035-01-01
+writing_polygons: true
+case: path/to/model/CASE
+
+distance_calculations:
+  - type: line
+    output_name: line_distance_target
+    optimization_direction: max
+    angle: 90
+    line_length: 5000
+    x: 1000.0
+    y: 2000.0
+    factor: 0
+    scale: 1
+
+  - type: point
+    output_name: point_distance_target
+    optimization_direction: min
+    x: 1500.0
+    y: 2500.0
+
+  - type: plume_extent
+    output_name: plume_extent_target
+    optimization_direction: max
+    x: 1200.0
+    y: 2200.0
+
+  - type: line
+    output_name: shifted_line_target
+    optimization_direction: max
+    angle: 45
+    line_length: 5000
+    x: 1000.0
+    y: 2000.0
+    factor: 250.0
+    scale: 10
+    output_date: 2036-01-01

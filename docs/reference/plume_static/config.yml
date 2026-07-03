@@ -1,0 +1,33 @@
+case: path/to/model/CASE
+
+fip_section:
+  fip_keyword: FIPNUM
+  fipxxx_regions:
+    - fipxxx_number: 1
+      output_name: region_1_oil_target
+      output_date: 2035-01-01
+      keyword: ROIP
+      factor: 0
+      scale: 1
+      optimization_direction: max
+
+    - fipxxx_number: 2
+      output_name: region_2_oil_target
+      output_date: 2035-01-01
+      keyword: ROIP
+      factor: 5000.0
+      scale: 10.0
+      optimization_direction: max
+
+keyword_section:
+  - source_name: FOPT
+    output_name: total_oil_target
+    output_date: max
+    optimization_direction: max
+
+  - source_name: FGPT
+    output_name: total_gas_target
+    output_date: 2035-01-01
+    factor: 1.0e6
+    scale: 5.0e6
+    optimization_direction: max
