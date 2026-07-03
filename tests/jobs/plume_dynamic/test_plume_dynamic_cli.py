@@ -24,7 +24,9 @@ distance_calculations:
     return input_path
 
 
-def test_main_entry_point_calls_runner(sample_config_file: Path, monkeypatch: pytest.MonkeyPatch):
+def test_main_entry_point_calls_runner(
+    sample_config_file: Path, monkeypatch: pytest.MonkeyPatch
+):
     captured = {}
 
     def fake_runner(config, **kwargs):
