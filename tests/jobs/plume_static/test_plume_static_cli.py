@@ -6,9 +6,7 @@ from everest_models.jobs.fm_plume_static import cli
 def test_main_entry_point_calls_runner(tmp_path, monkeypatch):
     config_file = tmp_path / "plume.yml"
     config_file.write_text(
-        "keyword_section:\n"
-        "  - source_name: FOPT\n"
-        "    output_name: oil_target\n"
+        "keyword_section:\n  - source_name: FOPT\n    output_name: oil_target\n"
     )
 
     captured = {}
@@ -31,9 +29,7 @@ def test_main_entry_point_calls_runner(tmp_path, monkeypatch):
 def test_main_entry_point_lint(tmp_path):
     config_file = tmp_path / "plume.yml"
     config_file.write_text(
-        "keyword_section:\n"
-        "  - source_name: FOPT\n"
-        "    output_name: oil_target\n"
+        "keyword_section:\n  - source_name: FOPT\n    output_name: oil_target\n"
     )
 
     with pytest.raises(SystemExit) as exc:

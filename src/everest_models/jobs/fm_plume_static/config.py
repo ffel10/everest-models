@@ -5,7 +5,6 @@ from typing import Any
 
 from everest_models.jobs.shared.io_utils import load_yaml
 
-
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
@@ -145,9 +144,7 @@ def _parse_keyword_entry(raw_entry: Any, index: int) -> KeywordConfig:
 
     raw_output_date = raw_entry.get("output_date")
     output_date = (
-        str(raw_output_date).strip() or None
-        if raw_output_date is not None
-        else None
+        str(raw_output_date).strip() or None if raw_output_date is not None else None
     )
 
     return KeywordConfig(
