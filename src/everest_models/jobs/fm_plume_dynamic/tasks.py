@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from datetime import date, datetime
+from importlib import import_module
 from typing import Any
 
 import numpy as np
@@ -11,6 +12,14 @@ from everest_models.jobs.fm_plume_dynamic.config import (
     parse_string_or_list,
     parse_thresholds,
 )
+
+
+def _resdata_file_class() -> Any:
+    return import_module("resdata.resfile").ResdataFile
+
+
+def _grid_class() -> Any:
+    return import_module("resdata.grid").Grid
 
 
 def _get_calc_output_name(calc: dict[str, Any], index: int) -> str:
@@ -111,7 +120,9 @@ def _compute_cell_distances(
     )
 
 
-def _apply_transform(raw: float, factor: float | None, scale: float, multiplier: int) -> float:
+def _apply_transform(
+    raw: float, factor: float | None, scale: float, multiplier: int
+) -> float:
     updated = raw if factor is None else raw - factor
     return (updated / scale) * multiplier
 
@@ -230,7 +241,9 @@ def _select_step_index(
         output_date_str = str(raw_date).strip()
         lowered_output_date = output_date_str.lower()
         if lowered_output_date not in {"min", "max", "mean"}:
-            report_dates = [_format_report_date(report_date) for report_date in unrst.report_dates]
+            report_dates = [
+                _format_report_date(report_date) for report_date in unrst.report_dates
+            ]
             try:
                 return report_dates.index(output_date_str)
             except ValueError as exc:
@@ -269,8 +282,11 @@ def _resolve_step_indices(
     # A forced step index never enters aggregation mode.
     if step_override is not None or cli_step is not None:
         idx = _select_step_index(
-            unrst, config, cli_output_date=cli_output_date,
-            cli_step=cli_step, step_override=step_override,
+            unrst,
+            config,
+            cli_output_date=cli_output_date,
+            cli_step=cli_step,
+            step_override=step_override,
         )
         return [idx], f"step={idx}"
 
@@ -287,8 +303,11 @@ def _resolve_step_indices(
         return list(range(n_steps)), raw_date.lower()
 
     idx = _select_step_index(
-        unrst, config, cli_output_date=cli_output_date,
-        cli_step=cli_step, output_date_override=output_date_override,
+        unrst,
+        config,
+        cli_output_date=cli_output_date,
+        cli_step=cli_step,
+        output_date_override=output_date_override,
     )
     label = f"date={raw_date}" if raw_date is not None else "last"
     return [idx], label
@@ -317,9 +336,7 @@ def _build_property_masks(
             "Property filtering requested but no UNRST path found. Provide --unrst, --case-name, or 'unrst'/'case' in YAML."
         )
 
-    from resdata.resfile import ResdataFile
-
-    unrst = ResdataFile(unrst_path)
+    unrst = _resdata_file_class()(unrst_path)
 
     seen: list[tuple[str, float, object]] = []
     for i, prop in enumerate(properties):
@@ -333,7 +350,11 @@ def _build_property_masks(
             pair_date = output_dates_list[-1]
         else:
             pair_date = None
-        triplet = (keyword, threshold, str(pair_date).strip() if pair_date is not None else None)
+        triplet = (
+            keyword,
+            threshold,
+            str(pair_date).strip() if pair_date is not None else None,
+        )
         if triplet not in seen:
             seen.append(triplet)
 
@@ -356,9 +377,13 @@ def _build_property_masks(
         threshold_suffix = _format_threshold_suffix(threshold)
         report_date_suffix = _format_date_suffix(unrst.report_dates[step_idx])
         mask_key = (
-            f"{keyword.lower()}_{threshold_suffix}_{report_date_suffix}" if len(seen) > 1 else "all"
+            f"{keyword.lower()}_{threshold_suffix}_{report_date_suffix}"
+            if len(seen) > 1
+            else "all"
         )
-        print(f"  {keyword} >= {threshold} @ {pair_date}: {selected_count} cells selected")
+        print(
+            f"  {keyword} >= {threshold} @ {pair_date}: {selected_count} cells selected"
+        )
         if selected_count == 0:
             print(
                 "Warning: "
@@ -367,7 +392,7 @@ def _build_property_masks(
             )
         masks[mask_key] = prop_mask
 
-    return masks if masks else {"all": np.zeros(len(centers), dtype=bool)}
+    return masks or {"all": np.zeros(len(centers), dtype=bool)}
 
 
 def _calc_factor_if_specified(calc: dict[str, Any], index: int) -> float | None:
@@ -402,7 +427,9 @@ def _compute_all_distances(
         raise ValueError("YAML must contain non-empty list 'distance_calculations'")
 
     result: dict[str, np.ndarray] = {}
-    property_masks_cache: dict[tuple[str | None, int | None], dict[str, np.ndarray]] = {}
+    property_masks_cache: dict[
+        tuple[str | None, int | None], dict[str, np.ndarray]
+    ] = {}
     column_active_indices: dict[str, np.ndarray] = {}
     calc_output_columns: dict[int, list[str]] = {}
 
@@ -438,7 +465,9 @@ def _compute_all_distances(
             output_column = output_name if prop == "all" else f"{output_name}_{prop}"
             column_active_indices[output_column] = prop_active_indices
             calc_output_columns.setdefault(index, []).append(output_column)
-            result[output_column] = _compute_cell_distances(calc, calc_type, prop_centers, index)
+            result[output_column] = _compute_cell_distances(
+                calc, calc_type, prop_centers, index
+            )
 
     return result, column_active_indices, calc_output_columns
 
@@ -470,7 +499,8 @@ def _resolve_calc_scalar_value(
         )
 
     scalar_values = [
-        _scalar_value_for_type(distance_results[column], calc_type) for column in matching_columns
+        _scalar_value_for_type(distance_results[column], calc_type)
+        for column in matching_columns
     ]
     if calc_type == "plume_extent":
         return max(scalar_values)
@@ -516,7 +546,9 @@ def _compute_distance_results_for_calc_step(
             continue
 
         output_column = output_name if prop == "all" else f"{output_name}_{prop}"
-        result[output_column] = _compute_cell_distances(calc, calc_type, prop_centers, index)
+        result[output_column] = _compute_cell_distances(
+            calc, calc_type, prop_centers, index
+        )
 
     return result
 
@@ -543,9 +575,7 @@ def _write_optimization_targets(
     unrst_path = _resolve_unrst_path(cli_unrst, case_name, config)
     unrst = None
     if unrst_path is not None:
-        from resdata.resfile import ResdataFile
-
-        unrst = ResdataFile(unrst_path)
+        unrst = _resdata_file_class()(unrst_path)
 
     for index, calc in enumerate(calculations, start=1):
         output_name = _get_calc_output_name(calc, index)
@@ -616,7 +646,9 @@ def _write_optimization_targets(
             )
             continue
 
-        raw_value = _resolve_calc_scalar_value(distance_results, calc, index, matching_columns)
+        raw_value = _resolve_calc_scalar_value(
+            distance_results, calc, index, matching_columns
+        )
         final_value = _apply_transform(raw_value, factor, scale, multiplier)
         _write_target_value(output_name, final_value)
         print(
@@ -626,11 +658,17 @@ def _write_optimization_targets(
             f"factor={factor if factor is not None else 0.0:g}, scale={scale:g}, value={final_value:.2f}"
         )
 
-        property_specific_columns = [column for column in matching_columns if column != output_name]
+        property_specific_columns = [
+            column for column in matching_columns if column != output_name
+        ]
         for column_name in property_specific_columns:
             calc_type = str(calc.get("type", "")).lower()
-            raw_column_value = _scalar_value_for_type(distance_results[column_name], calc_type)
-            final_column_value = _apply_transform(raw_column_value, factor, scale, multiplier)
+            raw_column_value = _scalar_value_for_type(
+                distance_results[column_name], calc_type
+            )
+            final_column_value = _apply_transform(
+                raw_column_value, factor, scale, multiplier
+            )
             _write_target_value(column_name, final_column_value)
             print(
                 f"Wrote target {column_name}: "
@@ -657,7 +695,9 @@ def _line_segment_from_calculation(
     )
 
 
-def _closest_point_on_line_segment(calc: dict[str, Any], x: float, y: float) -> tuple[float, float]:
+def _closest_point_on_line_segment(
+    calc: dict[str, Any], x: float, y: float
+) -> tuple[float, float]:
     x0 = float(calc["x"])
     y0 = float(calc["y"])
     angle_deg = float(calc.get("angle", 0.0))
@@ -695,7 +735,7 @@ def _find_extreme_cell(
     return extreme_idx, prop_centers[extreme_idx], int(prop_active_indices[extreme_idx])
 
 
-def _write_distance_polygon(
+def _write_distance_polygon(  # noqa: PLR0913
     output_path: str,
     distances: np.ndarray,
     extreme_idx: int,
@@ -759,13 +799,23 @@ def _write_point_min_distance_polygons(
                 distances, prop_active_indices, prop_centers, use_max=False
             )
             _write_distance_polygon(
-                f"{column}_mindist.pol", distances, extreme_idx, extreme_cell,
-                extreme_active, grid, x0, y0, origin_z_value,
-                float(np.min(prop_centers[:, 2])) - 1.0, use_max=False,
+                f"{column}_mindist.pol",
+                distances,
+                extreme_idx,
+                extreme_cell,
+                extreme_active,
+                grid,
+                x0,
+                y0,
+                origin_z_value,
+                float(np.min(prop_centers[:, 2])) - 1.0,
+                use_max=False,
             )
 
 
-def _write_line_polygon_for_visualization(config: dict[str, Any], centers: np.ndarray) -> None:
+def _write_line_polygon_for_visualization(
+    config: dict[str, Any], centers: np.ndarray
+) -> None:
     calculations = config.get("distance_calculations")
     if not isinstance(calculations, list) or len(calculations) == 0:
         return
@@ -776,7 +826,10 @@ def _write_line_polygon_for_visualization(config: dict[str, Any], centers: np.nd
             continue
 
         output_name = _get_calc_output_name(calc, index)
-        output_path = str(calc.get("line_polygon_file", f"{output_name}.pol")).strip() or f"{output_name}.pol"
+        output_path = (
+            str(calc.get("line_polygon_file", f"{output_name}.pol")).strip()
+            or f"{output_name}.pol"
+        )
         point_a, point_b = _line_segment_from_calculation(calc, z_value)
         with open(output_path, "w", encoding="utf-8") as handle:
             handle.write(f"{point_a[0]:.6f} {point_a[1]:.6f} {point_a[2]:.6f}\n")
@@ -819,9 +872,17 @@ def _write_line_min_distance_polygons(
                 calc, float(extreme_cell[0]), float(extreme_cell[1])
             )
             _write_distance_polygon(
-                f"{column}_mindist.pol", distances, extreme_idx, extreme_cell,
-                extreme_active, grid, line_x, line_y, origin_z_value,
-                float(np.min(prop_centers[:, 2])) - 1.0, use_max=False,
+                f"{column}_mindist.pol",
+                distances,
+                extreme_idx,
+                extreme_cell,
+                extreme_active,
+                grid,
+                line_x,
+                line_y,
+                origin_z_value,
+                float(np.min(prop_centers[:, 2])) - 1.0,
+                use_max=False,
             )
 
 
@@ -856,9 +917,17 @@ def _write_plume_extent_max_distance_polygons(
                 distances, prop_active_indices, prop_centers, use_max=True
             )
             _write_distance_polygon(
-                f"{column}_maxdist.pol", distances, extreme_idx, extreme_cell,
-                extreme_active, grid, x0, y0, origin_z_value,
-                float(np.min(prop_centers[:, 2])) - 1.0, use_max=True,
+                f"{column}_maxdist.pol",
+                distances,
+                extreme_idx,
+                extreme_cell,
+                extreme_active,
+                grid,
+                x0,
+                y0,
+                origin_z_value,
+                float(np.min(prop_centers[:, 2])) - 1.0,
+                use_max=True,
             )
 
 
@@ -875,9 +944,7 @@ def run_plume_dynamic(
 
     egrid_path = _resolve_egrid_path(egrid, case_name, loaded_config)
 
-    from resdata.grid import Grid
-
-    grid = Grid(egrid_path)
+    grid = _grid_class()(egrid_path)
     nactive = grid.get_num_active()
     centers = np.asarray(
         [grid.get_xyz(active_index=active_index) for active_index in range(nactive)],
@@ -889,13 +956,15 @@ def run_plume_dynamic(
     print(f"Cells (active): {len(centers)}")
     _print_minimum_z_cell_info(grid, centers)
 
-    distance_results, column_active_indices, calc_output_columns = _compute_all_distances(
-        centers,
-        loaded_config,
-        unrst,
-        case_name,
-        cli_output_date=output_date,
-        cli_step=step,
+    distance_results, column_active_indices, calc_output_columns = (
+        _compute_all_distances(
+            centers,
+            loaded_config,
+            unrst,
+            case_name,
+            cli_output_date=output_date,
+            cli_step=step,
+        )
     )
 
     if loaded_config.get("writing_polygons", False):

@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import math
 from datetime import timedelta
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 
 from everest_models.jobs.fm_plume_static.config import (
     KeywordConfig,
-    RegionConfig,
     SectionConfig,
     load_plume_static_config,
 )
+
+
+def _summary_class() -> Any:
+    return import_module("resdata.summary").Summary
 
 
 # ---------------------------------------------------------------------------
@@ -67,8 +71,7 @@ def _build_vector_dates(case: Any) -> list[str]:
     t0 = case.start_time
     tdays = case.numpy_vector("TIME")
     return [
-        (t0 + timedelta(days=float(day))).strftime("%Y-%m-%d %H:%M:%S")
-        for day in tdays
+        (t0 + timedelta(days=float(day))).strftime("%Y-%m-%d %H:%M:%S") for day in tdays
     ]
 
 
@@ -136,9 +139,13 @@ def _process_sections(sections: list[SectionConfig], case: Any) -> None:
     for section in sections:
         suffix = _get_fip_suffix(section.fip_keyword)
         for region in section.fipxxx_regions:
-            vector_name = f"{region.keyword.strip().upper()}{suffix}:{region.fipxxx_number}"
+            vector_name = (
+                f"{region.keyword.strip().upper()}{suffix}:{region.fipxxx_number}"
+            )
             try:
-                raw, selection = _extract_vector_value(case, vector_name, region.output_date)
+                raw, selection = _extract_vector_value(
+                    case, vector_name, region.output_date
+                )
             except ValueError as err:
                 print(f"Warning: {err}")
                 continue
@@ -157,7 +164,9 @@ def _process_sections(sections: list[SectionConfig], case: Any) -> None:
 def _process_keyword_sections(keyword_sections: list[KeywordConfig], case: Any) -> None:
     for entry in keyword_sections:
         try:
-            raw, selection = _extract_vector_value(case, entry.source_name, entry.output_date)
+            raw, selection = _extract_vector_value(
+                case, entry.source_name, entry.output_date
+            )
         except ValueError as err:
             print(f"Warning: {err}")
             continue
@@ -189,9 +198,7 @@ def run_plume_static(
     if not summary_path.exists():
         raise FileNotFoundError(f"Summary file not found: {summary_path}")
 
-    from resdata.summary import Summary
-
-    case = Summary(str(summary_path))
+    case = _summary_class()(str(summary_path))
 
     print("--- UNSMRY properties ---")
     print(f"Summary: {summary_path}")
@@ -200,7 +207,9 @@ def run_plume_static(
     print("--- Config ---")
     print(f"FIP sections: {len(sections)}")
     for section in sections:
-        print(f"  fip_keyword={section.fip_keyword}, regions={len(section.fipxxx_regions)}")
+        print(
+            f"  fip_keyword={section.fip_keyword}, regions={len(section.fipxxx_regions)}"
+        )
         for region in section.fipxxx_regions:
             print(
                 f"    fipxxx_number={region.fipxxx_number}, "

@@ -66,8 +66,7 @@ def validate_config_schema(config: dict[str, Any]) -> None:
     missing_top_level = REQUIRED_TOP_LEVEL_KEYS - set(config.keys())
     if missing_top_level:
         raise ValueError(
-            "Missing required top-level key(s): "
-            f"{', '.join(sorted(missing_top_level))}"
+            f"Missing required top-level key(s): {', '.join(sorted(missing_top_level))}"
         )
 
     calculations = config.get("distance_calculations")
@@ -126,10 +125,7 @@ def parse_thresholds(value: object) -> list[float]:
 
 
 def load_plume_config(config: dict[str, Any] | str | None) -> dict[str, Any]:
-    if isinstance(config, str):
-        loaded_config = load_yaml(config) or {}
-    else:
-        loaded_config = config or {}
+    loaded_config = load_yaml(config) or {} if isinstance(config, str) else config or {}
 
     if not isinstance(loaded_config, dict):
         raise ValueError("Top-level YAML must be a mapping")
