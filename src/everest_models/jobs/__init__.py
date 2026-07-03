@@ -6,6 +6,8 @@ from everest_models.jobs import (
     fm_extract_summary_data,
     fm_interpret_well_drill,
     fm_npv,
+    fm_plume_dynamic,
+    fm_plume_static,
     fm_rf,
     fm_schmerge,
     fm_select_wells,
@@ -13,8 +15,8 @@ from everest_models.jobs import (
     fm_strip_dates,
     fm_well_constraints,
     fm_well_filter,
-    fm_well_swapping,
     fm_well_trajectory,
+    fm_well_swapping,
 )
 
 __all__ = [
@@ -25,6 +27,8 @@ __all__ = [
     "fm_extract_summary_data",
     "fm_interpret_well_drill",
     "fm_npv",
+    "fm_plume_dynamic",
+    "fm_plume_static",
     "fm_rf",
     "fm_schmerge",
     "fm_select_wells",
