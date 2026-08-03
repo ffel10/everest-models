@@ -4,7 +4,6 @@ import argparse
 import math
 from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple
 
 import numpy as np
 from resdata.grid import Grid
@@ -63,7 +62,7 @@ def _parse_string_or_list(value: object) -> list[str]:
     return [str(value).strip()]
 
 
-def _load_config(config_path: Path) -> Dict:
+def _load_config(config_path: Path) -> dict:
     yaml_loader = YAML(typ="safe", pure=True)
     yaml_loader.allow_duplicate_keys = False
     try:
@@ -78,7 +77,7 @@ def _load_config(config_path: Path) -> Dict:
     return config
 
 
-def _validate_config_schema(config: Dict) -> None:
+def _validate_config_schema(config: dict) -> None:
     unknown_top_level = set(config.keys()) - ALLOWED_TOP_LEVEL_KEYS
     if unknown_top_level:
         raise ValueError(
@@ -90,8 +89,7 @@ def _validate_config_schema(config: Dict) -> None:
     missing_top_level = REQUIRED_TOP_LEVEL_KEYS - set(config.keys())
     if missing_top_level:
         raise ValueError(
-            "Missing required top-level key(s): "
-            f"{', '.join(sorted(missing_top_level))}"
+            f"Missing required top-level key(s): {', '.join(sorted(missing_top_level))}"
         )
 
     calculations = config.get("distance_calculations")
@@ -100,7 +98,9 @@ def _validate_config_schema(config: Dict) -> None:
 
     for index, calc in enumerate(calculations, start=1):
         if not isinstance(calc, dict):
-            raise ValueError(f"Calculation {index}: expected mapping, got {type(calc).__name__}")
+            raise ValueError(
+                f"Calculation {index}: expected mapping, got {type(calc).__name__}"
+            )
 
         unknown_calc = set(calc.keys()) - ALLOWED_CALC_KEYS
         if unknown_calc:
@@ -123,7 +123,7 @@ def _validate_config_schema(config: Dict) -> None:
             )
 
 
-def _get_calc_output_name(calc: Dict, index: int) -> str:
+def _get_calc_output_name(calc: dict, index: int) -> str:
     raw_output_name = calc.get("output_name")
     output_name = str(raw_output_name).strip() if raw_output_name is not None else ""
     if not output_name:
@@ -244,7 +244,7 @@ def _distance_to_line(
     return np.sqrt((centers[:, 0] - closest_x) ** 2 + (centers[:, 1] - closest_y) ** 2)
 
 
-def _resolve_egrid_path(args: argparse.Namespace, config: Dict) -> str:
+def _resolve_egrid_path(args: argparse.Namespace, config: dict) -> str:
     if args.egrid:
         return str(args.egrid)
 
@@ -260,7 +260,7 @@ def _resolve_egrid_path(args: argparse.Namespace, config: Dict) -> str:
     raise ValueError("Provide --egrid, or add 'egrid' (or 'case') in YAML")
 
 
-def _resolve_unrst_path(args: argparse.Namespace, config: Dict) -> Optional[str]:
+def _resolve_unrst_path(args: argparse.Namespace, config: dict) -> str | None:
     if args.unrst:
         return str(args.unrst)
 
@@ -279,9 +279,9 @@ def _resolve_unrst_path(args: argparse.Namespace, config: Dict) -> Optional[str]
 def _select_step_index(
     unrst: ResdataFile,
     args: argparse.Namespace,
-    config: Dict,
+    config: dict,
     output_date_override: object = None,
-    step_override: Optional[int] = None,
+    step_override: int | None = None,
 ) -> int:
     if output_date_override is not None:
         raw_date = output_date_override
@@ -297,7 +297,9 @@ def _select_step_index(
         if lowered_output_date in {"min", "max", "mean"}:
             raw_date = None
         else:
-            report_dates = [_format_report_date(report_date) for report_date in unrst.report_dates]
+            report_dates = [
+                _format_report_date(report_date) for report_date in unrst.report_dates
+            ]
             try:
                 return report_dates.index(output_date_str)
             except ValueError as exc:
@@ -326,9 +328,9 @@ def _select_step_index(
 def _resolve_step_indices(
     unrst: ResdataFile,
     args: argparse.Namespace,
-    config: Dict,
+    config: dict,
     output_date_override: object = None,
-    step_override: Optional[int] = None,
+    step_override: int | None = None,
 ) -> tuple[list[int], str]:
     n_steps = len(unrst.report_dates)
     if n_steps == 0:
@@ -396,10 +398,10 @@ def _format_date_suffix(report_date: object) -> str:
 def _build_property_masks(
     centers: np.ndarray,
     args: argparse.Namespace,
-    config: Dict,
+    config: dict,
     output_date_override: object = None,
-    step_override: Optional[int] = None,
-) -> Dict[str, np.ndarray]:
+    step_override: int | None = None,
+) -> dict[str, np.ndarray]:
     properties = _parse_string_or_list(config.get("property"))
     thresholds = _parse_thresholds(config.get("threshold"))
     output_dates_list = _parse_string_or_list(config.get("output_date"))
@@ -427,11 +429,15 @@ def _build_property_masks(
             pair_date = output_dates_list[-1]
         else:
             pair_date = None
-        triplet = (keyword, threshold, str(pair_date).strip() if pair_date is not None else None)
+        triplet = (
+            keyword,
+            threshold,
+            str(pair_date).strip() if pair_date is not None else None,
+        )
         if triplet not in seen:
             seen.append(triplet)
 
-    masks: Dict[str, np.ndarray] = {}
+    masks: dict[str, np.ndarray] = {}
     for keyword, threshold, pair_date in seen:
         if keyword not in unrst:
             print(f"Warning: property '{keyword}' not found in UNRST; skipping.")
@@ -453,7 +459,9 @@ def _build_property_masks(
             if len(seen) > 1
             else "all"
         )
-        print(f"  {keyword} >= {threshold} @ {pair_date}: {selected_count} cells selected")
+        print(
+            f"  {keyword} >= {threshold} @ {pair_date}: {selected_count} cells selected"
+        )
         if selected_count == 0:
             print(
                 "Warning: "
@@ -462,15 +470,15 @@ def _build_property_masks(
             )
         masks[mask_key] = prop_mask
 
-    return masks if masks else {"all": np.zeros(len(centers), dtype=bool)}
+    return masks or {"all": np.zeros(len(centers), dtype=bool)}
 
 
 def _build_property_masks_for_step(
     centers: np.ndarray,
     unrst: ResdataFile,
-    config: Dict,
+    config: dict,
     step_index: int,
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     properties = _parse_string_or_list(config.get("property"))
     thresholds = _parse_thresholds(config.get("threshold"))
 
@@ -485,7 +493,7 @@ def _build_property_masks_for_step(
         if pair not in seen:
             seen.append(pair)
 
-    masks: Dict[str, np.ndarray] = {}
+    masks: dict[str, np.ndarray] = {}
     for keyword, threshold in seen:
         if keyword not in unrst:
             print(f"Warning: property '{keyword}' not found in UNRST; skipping.")
@@ -507,10 +515,12 @@ def _build_property_masks_for_step(
             )
         masks[mask_key] = prop_mask
 
-    return masks if masks else {"all": np.zeros(len(centers), dtype=bool)}
+    return masks or {"all": np.zeros(len(centers), dtype=bool)}
 
 
-def _normalization_parameters(calc: Dict, index: int) -> tuple[Optional[float], Optional[float], Optional[float]]:
+def _normalization_parameters(
+    calc: dict, index: int
+) -> tuple[float | None, float | None, float | None]:
     has_obj_min = "obj_min" in calc
     has_obj_max = "obj_max" in calc
     has_obj_mean = "obj_mean" in calc
@@ -535,12 +545,16 @@ def _normalization_parameters(calc: Dict, index: int) -> tuple[Optional[float], 
         obj_min = float(calc["obj_min"])
         obj_max = float(calc["obj_max"])
     except (TypeError, ValueError) as exc:
-        raise ValueError(f"Calculation {index}: obj_min and obj_max must be numeric") from exc
+        raise ValueError(
+            f"Calculation {index}: obj_min and obj_max must be numeric"
+        ) from exc
 
     try:
         obj_mean = float(obj_mean_raw)
     except (TypeError, ValueError) as exc:
-        raise ValueError(f"Calculation {index}: obj_mean (or obj_ref) must be numeric") from exc
+        raise ValueError(
+            f"Calculation {index}: obj_mean (or obj_ref) must be numeric"
+        ) from exc
 
     denominator = obj_max - obj_min
     if denominator == 0.0:
@@ -553,9 +567,9 @@ def _normalization_parameters(calc: Dict, index: int) -> tuple[Optional[float], 
 
 def _normalized_value(
     raw_value: float,
-    obj_min: Optional[float],
-    obj_max: Optional[float],
-    obj_mean: Optional[float],
+    obj_min: float | None,
+    obj_max: float | None,
+    obj_mean: float | None,
 ) -> float:
     if obj_min is None or obj_max is None or obj_mean is None:
         return raw_value
@@ -565,15 +579,17 @@ def _normalized_value(
 def _compute_all_distances(
     centers: np.ndarray,
     args: argparse.Namespace,
-    config: Dict,
-) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+    config: dict,
+) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
     calculations = config.get("distance_calculations")
     if not isinstance(calculations, list) or len(calculations) == 0:
         raise ValueError("YAML must contain non-empty list 'distance_calculations'")
 
-    result: Dict[str, np.ndarray] = {}
-    property_masks_cache: Dict[tuple[Optional[str], Optional[int]], Dict[str, np.ndarray]] = {}
-    column_active_indices: Dict[str, np.ndarray] = {}
+    result: dict[str, np.ndarray] = {}
+    property_masks_cache: dict[
+        tuple[str | None, int | None], dict[str, np.ndarray]
+    ] = {}
+    column_active_indices: dict[str, np.ndarray] = {}
 
     for index, calc in enumerate(calculations, start=1):
         calc_type = str(calc.get("type", "")).lower()
@@ -613,7 +629,9 @@ def _compute_all_distances(
 
             if calc_type in ("plume_extent", "point"):
                 if "x" not in calc or "y" not in calc:
-                    raise ValueError(f"Calculation {index}: '{calc_type}' requires x and y")
+                    raise ValueError(
+                        f"Calculation {index}: '{calc_type}' requires x and y"
+                    )
                 x0 = float(calc["x"])
                 y0 = float(calc["y"])
                 result[output_column] = _distance_2d_from_xy(prop_centers, x0, y0)
@@ -628,7 +646,9 @@ def _compute_all_distances(
                 y0 = float(calc["y"])
                 angle_deg = float(calc.get("angle", 0.0))
                 line_length = float(calc.get("line_length", 500.0))
-                result[output_column] = _distance_to_line(prop_centers, angle_deg, x0, y0, line_length)
+                result[output_column] = _distance_to_line(
+                    prop_centers, angle_deg, x0, y0, line_length
+                )
             else:
                 raise ValueError(
                     f"Calculation {index}: unknown type '{calc_type}'. Use plume_extent, point, or line"
@@ -637,19 +657,26 @@ def _compute_all_distances(
     return result, column_active_indices
 
 
-def _resolve_calc_scalar_value(distance_results: Dict[str, np.ndarray], calc: Dict, index: int) -> float:
+def _resolve_calc_scalar_value(
+    distance_results: dict[str, np.ndarray], calc: dict, index: int
+) -> float:
     output_name = _get_calc_output_name(calc, index)
 
     calc_type = str(calc.get("type", "")).lower()
     matching_columns = [
         column
-        for column in distance_results.keys()
+        for column in distance_results
         if column == output_name or column.startswith(f"{output_name}_")
     ]
     if not matching_columns:
-        raise ValueError(f"Calculation {index}: no output columns found for output_name='{output_name}'")
+        raise ValueError(
+            f"Calculation {index}: no output columns found for output_name='{output_name}'"
+        )
 
-    scalar_values = [_scalar_value_for_type(distance_results[column], calc_type) for column in matching_columns]
+    scalar_values = [
+        _scalar_value_for_type(distance_results[column], calc_type)
+        for column in matching_columns
+    ]
     if calc_type == "plume_extent":
         return max(scalar_values)
     return min(scalar_values)
@@ -670,17 +697,17 @@ def _aggregate_scalar_values(values: list[float], mode: str) -> float:
 def _compute_distance_results_for_calc_step(
     centers: np.ndarray,
     unrst: ResdataFile,
-    config: Dict,
-    calc: Dict,
+    config: dict,
+    calc: dict,
     index: int,
     step_index: int,
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     calc_type = str(calc.get("type", "")).lower()
     output_name = _get_calc_output_name(calc, index)
     property_masks = _build_property_masks_for_step(centers, unrst, config, step_index)
-    result: Dict[str, np.ndarray] = {}
+    result: dict[str, np.ndarray] = {}
 
-    for prop in property_masks.keys():
+    for prop in property_masks:
         prop_active_indices = np.flatnonzero(property_masks[prop])
         prop_centers = centers[prop_active_indices]
         if len(prop_centers) == 0:
@@ -696,9 +723,13 @@ def _compute_distance_results_for_calc_step(
             y0 = float(calc["y"])
             angle_deg = float(calc.get("angle", 0.0))
             line_length = float(calc.get("line_length", 500.0))
-            result[output_column] = _distance_to_line(prop_centers, angle_deg, x0, y0, line_length)
+            result[output_column] = _distance_to_line(
+                prop_centers, angle_deg, x0, y0, line_length
+            )
         else:
-            raise ValueError(f"Calculation {index}: unknown type '{calc_type}'. Use plume_extent, point, or line")
+            raise ValueError(
+                f"Calculation {index}: unknown type '{calc_type}'. Use plume_extent, point, or line"
+            )
 
     return result
 
@@ -709,8 +740,8 @@ def _write_target_value(output_name: str, value: float) -> None:
 
 
 def _write_optimization_targets(
-    distance_results: Dict[str, np.ndarray],
-    config: Dict,
+    distance_results: dict[str, np.ndarray],
+    config: dict,
     centers: np.ndarray,
     args: argparse.Namespace,
 ) -> None:
@@ -726,7 +757,9 @@ def _write_optimization_targets(
         obj_min, obj_max, obj_mean = _normalization_parameters(calc, index)
 
         raw_direction = calc.get("optimization_direction")
-        optimization_direction = _normalize_optimization_direction(raw_direction, f"Calculation {index}")
+        optimization_direction = _normalize_optimization_direction(
+            raw_direction, f"Calculation {index}"
+        )
         multiplier = _optimization_multiplier(optimization_direction)
 
         calc_output_date = calc.get("output_date")
@@ -746,7 +779,9 @@ def _write_optimization_targets(
 
         if selection in {"min", "max", "mean"} and step_indices is not None:
             per_step_results = [
-                _compute_distance_results_for_calc_step(centers, unrst, config, calc, index, step_index)
+                _compute_distance_results_for_calc_step(
+                    centers, unrst, config, calc, index, step_index
+                )
                 for step_index in step_indices
             ]
             scalar_values = [
@@ -763,7 +798,9 @@ def _write_optimization_targets(
                 continue
 
             raw_value = _aggregate_scalar_values(scalar_values, selection)
-            final_value = _normalized_value(raw_value, obj_min, obj_max, obj_mean) * multiplier
+            final_value = (
+                _normalized_value(raw_value, obj_min, obj_max, obj_mean) * multiplier
+            )
             _write_target_value(output_name, final_value)
             print(
                 f"Wrote target {output_name}: "
@@ -777,7 +814,7 @@ def _write_optimization_targets(
 
         matching_columns = [
             column
-            for column in distance_results.keys()
+            for column in distance_results
             if column == output_name or column.startswith(f"{output_name}_")
         ]
         if not matching_columns:
@@ -789,7 +826,9 @@ def _write_optimization_targets(
             continue
 
         raw_value = _resolve_calc_scalar_value(distance_results, calc, index)
-        final_value = _normalized_value(raw_value, obj_min, obj_max, obj_mean) * multiplier
+        final_value = (
+            _normalized_value(raw_value, obj_min, obj_max, obj_mean) * multiplier
+        )
         _write_target_value(output_name, final_value)
         print(
             f"Wrote target {output_name}: "
@@ -799,11 +838,18 @@ def _write_optimization_targets(
             f"value={final_value:.10f}"
         )
 
-        property_specific_columns = [col for col in matching_columns if col != output_name]
+        property_specific_columns = [
+            col for col in matching_columns if col != output_name
+        ]
         for column_name in property_specific_columns:
             calc_type = str(calc.get("type", "")).lower()
-            raw_column_value = _scalar_value_for_type(distance_results[column_name], calc_type)
-            final_column_value = _normalized_value(raw_column_value, obj_min, obj_max, obj_mean) * multiplier
+            raw_column_value = _scalar_value_for_type(
+                distance_results[column_name], calc_type
+            )
+            final_column_value = (
+                _normalized_value(raw_column_value, obj_min, obj_max, obj_mean)
+                * multiplier
+            )
             _write_target_value(column_name, final_column_value)
             print(
                 f"Wrote target {column_name}: "
@@ -815,9 +861,9 @@ def _write_optimization_targets(
 
 
 def _line_segment_from_calculation(
-    calc: Dict,
+    calc: dict,
     z_value: float,
-) -> Tuple[tuple[float, float, float], tuple[float, float, float]]:
+) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
     x0 = float(calc["x"])
     y0 = float(calc["y"])
     angle_deg = float(calc.get("angle", 0.0))
@@ -831,7 +877,9 @@ def _line_segment_from_calculation(
     )
 
 
-def _closest_point_on_line_segment(calc: Dict, x: float, y: float) -> tuple[float, float]:
+def _closest_point_on_line_segment(
+    calc: dict, x: float, y: float
+) -> tuple[float, float]:
     """Closest point on the configured finite line segment to (x, y)."""
     x0 = float(calc["x"])
     y0 = float(calc["y"])
@@ -861,9 +909,9 @@ def _closest_point_on_line_segment(calc: Dict, x: float, y: float) -> tuple[floa
 
 
 def _write_point_min_distance_polygons(
-    config: Dict,
-    distance_results: Dict[str, np.ndarray],
-    column_active_indices: Dict[str, np.ndarray],
+    config: dict,
+    distance_results: dict[str, np.ndarray],
+    column_active_indices: dict[str, np.ndarray],
     centers: np.ndarray,
     grid: Grid,
 ) -> None:
@@ -885,7 +933,7 @@ def _write_point_min_distance_polygons(
 
         matching_columns = [
             column
-            for column in distance_results.keys()
+            for column in distance_results
             if column == output_name or column.startswith(f"{output_name}_")
         ]
 
@@ -915,7 +963,9 @@ def _write_point_min_distance_polygons(
 
             with open(output_path, "w", encoding="utf-8") as handle:
                 handle.write(f"{x0:.6f} {y0:.6f} {origin_z_value:.6f}\n")
-                handle.write(f"{closest[0]:.6f} {closest[1]:.6f} {endpoint_z_value:.6f}\n")
+                handle.write(
+                    f"{closest[0]:.6f} {closest[1]:.6f} {endpoint_z_value:.6f}\n"
+                )
                 handle.write("999.00 999.00 999.00\n")
 
             print(
@@ -929,7 +979,7 @@ def _write_point_min_distance_polygons(
             )
 
 
-def _write_line_polygon_for_visualization(config: Dict, centers: np.ndarray) -> None:
+def _write_line_polygon_for_visualization(config: dict, centers: np.ndarray) -> None:
     calculations = config.get("distance_calculations")
     if not isinstance(calculations, list) or len(calculations) == 0:
         return
@@ -955,9 +1005,9 @@ def _write_line_polygon_for_visualization(config: Dict, centers: np.ndarray) -> 
 
 
 def _write_line_min_distance_polygons(
-    config: Dict,
-    distance_results: Dict[str, np.ndarray],
-    column_active_indices: Dict[str, np.ndarray],
+    config: dict,
+    distance_results: dict[str, np.ndarray],
+    column_active_indices: dict[str, np.ndarray],
     centers: np.ndarray,
     grid: Grid,
 ) -> None:
@@ -976,7 +1026,7 @@ def _write_line_min_distance_polygons(
 
         matching_columns = [
             column
-            for column in distance_results.keys()
+            for column in distance_results
             if column == output_name or column.startswith(f"{output_name}_")
         ]
 
@@ -1003,12 +1053,16 @@ def _write_line_min_distance_polygons(
             i_res, j_res, k_res = i_idx + 1, j_idx + 1, k_idx + 1
             x_cell, y_cell, z_cell = grid.get_xyz(active_index=closest_active_index)
 
-            line_x, line_y = _closest_point_on_line_segment(calc, float(closest[0]), float(closest[1]))
+            line_x, line_y = _closest_point_on_line_segment(
+                calc, float(closest[0]), float(closest[1])
+            )
             output_path = f"{column}_mindist.pol"
 
             with open(output_path, "w", encoding="utf-8") as handle:
                 handle.write(f"{line_x:.6f} {line_y:.6f} {origin_z_value:.6f}\n")
-                handle.write(f"{closest[0]:.6f} {closest[1]:.6f} {endpoint_z_value:.6f}\n")
+                handle.write(
+                    f"{closest[0]:.6f} {closest[1]:.6f} {endpoint_z_value:.6f}\n"
+                )
                 handle.write("999.00 999.00 999.00\n")
 
             print(
@@ -1023,9 +1077,9 @@ def _write_line_min_distance_polygons(
 
 
 def _write_plume_extent_max_distance_polygons(
-    config: Dict,
-    distance_results: Dict[str, np.ndarray],
-    column_active_indices: Dict[str, np.ndarray],
+    config: dict,
+    distance_results: dict[str, np.ndarray],
+    column_active_indices: dict[str, np.ndarray],
     centers: np.ndarray,
     grid: Grid,
 ) -> None:
@@ -1047,7 +1101,7 @@ def _write_plume_extent_max_distance_polygons(
 
         matching_columns = [
             column
-            for column in distance_results.keys()
+            for column in distance_results
             if column == output_name or column.startswith(f"{output_name}_")
         ]
 
@@ -1077,7 +1131,9 @@ def _write_plume_extent_max_distance_polygons(
             output_path = f"{column}_maxdist.pol"
             with open(output_path, "w", encoding="utf-8") as handle:
                 handle.write(f"{x0:.6f} {y0:.6f} {origin_z_value:.6f}\n")
-                handle.write(f"{farthest[0]:.6f} {farthest[1]:.6f} {endpoint_z_value:.6f}\n")
+                handle.write(
+                    f"{farthest[0]:.6f} {farthest[1]:.6f} {endpoint_z_value:.6f}\n"
+                )
                 handle.write("999.00 999.00 999.00\n")
 
             print(
@@ -1133,8 +1189,12 @@ def main_entry_point(args=None):
             centers,
             grid,
         )
-        _write_line_min_distance_polygons(config, distance_results, column_active_indices, centers, grid)
-        _write_point_min_distance_polygons(config, distance_results, column_active_indices, centers, grid)
+        _write_line_min_distance_polygons(
+            config, distance_results, column_active_indices, centers, grid
+        )
+        _write_point_min_distance_polygons(
+            config, distance_results, column_active_indices, centers, grid
+        )
 
     print("--- Distance summary ---")
     for column_name, values in distance_results.items():

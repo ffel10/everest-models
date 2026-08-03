@@ -39,5 +39,10 @@ def build_argument_parser(skip_type: bool = False):
         default=None,
         help="Target report date in YYYY-MM-DD format. Overrides step when provided.",
     )
-    parser.add_argument("--step", type=int, default=None, help="UNRST time-step index, default -1 (last)")
+    parser.add_argument(
+        "--step",
+        type=int,
+        default=None,
+        help="UNRST time-step index, default -1 (last)",
+    )
     return parser
