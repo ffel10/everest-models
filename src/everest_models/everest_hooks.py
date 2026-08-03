@@ -30,7 +30,7 @@ JOBS = "everest_models.jobs"
 
 
 def _get_jobs():
-    return (job.name for job in files(JOBS).iterdir() if job.name.startswith("fm_"))
+    return (f"fm_{job}" for job in get_forward_models())
 
 
 @hookimpl

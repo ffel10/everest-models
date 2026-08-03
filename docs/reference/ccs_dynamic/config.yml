@@ -1,0 +1,29 @@
+property: SGAS
+threshold: 0.05
+output_date: 2125-01-01
+writing_polygons: true
+
+distance_calculations:
+  - type: point
+    output_name: output/dyn_point_target
+    optimization_direction: min
+    x: 518000
+    y: 6482000
+
+  - type: line
+    output_name: output/dyn_line_target
+    optimization_direction: min
+    x: 518500
+    y: 6482600
+    angle: 35
+    line_length: 800
+    line_polygon_file: output/dyn_line.pol
+
+  - type: plume_extent
+    output_name: output/dyn_extent_target
+    optimization_direction: max
+    x: 519000
+    y: 6483200
+    obj_min: 0
+    obj_max: 5000
+    obj_mean: 1500

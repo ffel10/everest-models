@@ -1,4 +1,6 @@
 from everest_models.jobs import (
+    fm_ccs_static,
+    fm_ccs_dynamic,
     fm_add_templates,
     fm_compute_economics,
     fm_drill_date_planner,
@@ -18,6 +20,8 @@ from everest_models.jobs import (
 )
 
 __all__ = [
+    "fm_ccs_static",
+    "fm_ccs_dynamic",
     "fm_add_templates",
     "fm_drill_date_planner",
     "fm_drill_planner",

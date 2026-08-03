@@ -53,6 +53,10 @@ def test_get_forward_model_schemas_hook(plugin_manager):
             "fm_well_constraints: error: the following arguments are required: -i/--input",
         ),
         (
+            ["ccs_dynamic  -c files/ccs_config.yml -cn CASE_01"],
+            "",
+        ),
+        (
             [
                 "not_add_templates     -i wc_wells.json -c files/at_config.yml -o out2",
                 "schmerge           -i at_wells.json -o out3",
@@ -129,6 +133,7 @@ def test_lint_forward_model_hook(
         "npv",
         "well_constraints",
         "add_templates",
+        "ccs_dynamic",
         "rf",
         "well_filter",
         "interpret_well_drill",

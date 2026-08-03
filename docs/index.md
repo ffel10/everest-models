@@ -20,6 +20,8 @@ of the following:
 - Reference:
     - Jobs:
         - [Add Templates](reference/add_templates/reference.md)
+        - [CCS Dynamic](reference/ccs_dynamic/reference.md)
+        - [CCS Static](reference/ccs_static/reference.md)
         - [Drill Date Planner](reference/drill_date_planner/reference.md)
         - [Drill Planner](reference/drill_planner/reference.md)
         - [Compute Economics](reference/compute_economics/reference.md)
