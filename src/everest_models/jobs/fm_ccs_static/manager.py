@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import math
 from dataclasses import dataclass
 from datetime import timedelta
@@ -165,7 +164,9 @@ def _parse_region(raw_region: Any, index: int, keyword: str) -> RegionConfig:
 
 def _parse_section(raw_section: Any, index: int) -> SectionConfig:
     if not isinstance(raw_section, dict):
-        raise ValueError(f"Section #{index}: expected mapping, got {type(raw_section).__name__}")
+        raise ValueError(
+            f"Section #{index}: expected mapping, got {type(raw_section).__name__}"
+        )
 
     if "fip_keyword" not in raw_section:
         raise ValueError(f"Section #{index}: missing required key 'fip_keyword'")
@@ -206,7 +207,7 @@ def _parse_keyword_entry(raw_entry: Any, index: int) -> KeywordConfig:
     output_date = None
     if raw_output_date is not None:
         output_date_text = str(raw_output_date).strip()
-        output_date = output_date_text if output_date_text else None
+        output_date = output_date_text or None
 
     obj_min, obj_max, obj_mean = _resolve_normalization_parameters(
         raw_entry,
@@ -303,8 +304,7 @@ def _build_vector_dates(case: Summary) -> list[str]:
     t0 = case.start_time
     tdays = case.numpy_vector("TIME")
     return [
-        (t0 + timedelta(days=float(day))).strftime("%Y-%m-%d %H:%M:%S")
-        for day in tdays
+        (t0 + timedelta(days=float(day))).strftime("%Y-%m-%d %H:%M:%S") for day in tdays
     ]
 
 
@@ -383,10 +383,14 @@ def _process_sections(sections: list[SectionConfig], case: Summary) -> None:
             )
 
 
-def _process_keyword_sections(keyword_sections: list[KeywordConfig], case: Summary) -> None:
+def _process_keyword_sections(
+    keyword_sections: list[KeywordConfig], case: Summary
+) -> None:
     for entry in keyword_sections:
         try:
-            value, selection = _extract_vector_value(case, entry.source_name, entry.output_date)
+            value, selection = _extract_vector_value(
+                case, entry.source_name, entry.output_date
+            )
         except ValueError as err:
             print(f"Warning: {err}")
             continue
@@ -422,7 +426,9 @@ def main_entry_point(args=None):
         sections = _load_sections(config)
     keyword_sections = _load_keyword_sections(config)
     if not sections and not keyword_sections:
-        raise ValueError("Config must contain at least one of: fip_section, keyword_section")
+        raise ValueError(
+            "Config must contain at least one of: fip_section, keyword_section"
+        )
 
     summary_path = _resolve_summary_path(options.case_name)
     if not summary_path.exists():
@@ -436,7 +442,9 @@ def main_entry_point(args=None):
     print(f"Summary: {summary_path}")
     print(f"Sections parsed: {len(sections)}")
     for section in sections:
-        print(f"- fip_keyword: {section.fip_keyword} (regions: {len(section.fipxxx_region)})")
+        print(
+            f"- fip_keyword: {section.fip_keyword} (regions: {len(section.fipxxx_region)})"
+        )
         for region in section.fipxxx_region:
             print(
                 "  "

@@ -1,5 +1,3 @@
-from everest_models.jobs.fm_ccs_static.manager import main_entry_point
-
 FULL_JOB_NAME = "CCS static"
 
 EXAMPLES = """
