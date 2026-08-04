@@ -51,6 +51,7 @@ coverage.xml
 # Environments
 .env
 .venv
+.venv_precommit/
 env/
 venv/
 ENV/
