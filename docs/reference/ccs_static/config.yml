@@ -1,0 +1,31 @@
+fip_section:
+  - fip_keyword: FIPNUM
+    fipxxx_region:
+      - fipxxx_number: 1
+        output_name: output/roipnum_1_last
+        output_date: 2125-01-01
+        keyword: ROIP
+        optimization_direction: max
+
+      - fipxxx_number: 2
+        output_name: output/roipnum_2_norm
+        output_date: max
+        keyword: ROIP
+        obj_min: 0
+        obj_max: 1000000
+        obj_mean: 450000
+        optimization_direction: max
+
+keyword_section:
+  - source_name: FGIT
+    output_name: output/fgit_last
+    output_date: 2125-01-01
+    optimization_direction: max
+
+  - source_name: FOPT
+    output_name: output/fopt_mean_norm
+    output_date: mean
+    obj_min: 0
+    obj_max: 100000000
+    obj_mean: 50000000
+    optimization_direction: min

@@ -1,5 +1,7 @@
 from everest_models.jobs import (
     fm_add_templates,
+    fm_ccs_dynamic,
+    fm_ccs_static,
     fm_compute_economics,
     fm_drill_date_planner,
     fm_drill_planner,
@@ -14,13 +16,15 @@ from everest_models.jobs import (
     fm_well_constraints,
     fm_well_filter,
     fm_well_swapping,
-    fm_well_trajectory,
+    fm_well_trajectory, 
 )
 
 __all__ = [
     "fm_add_templates",
     "fm_drill_date_planner",
     "fm_drill_planner",
+    "fm_ccs_dynamic",
+    "fm_ccs_static",
     "fm_compute_economics",
     "fm_extract_summary_data",
     "fm_interpret_well_drill",
@@ -33,5 +37,5 @@ __all__ = [
     "fm_well_constraints",
     "fm_well_filter",
     "fm_well_trajectory",
-    "fm_well_swapping",
+    "fm_well_swapping", 
 ]
